@@ -90,7 +90,7 @@ public class InteropServerTests
 
         this.server.HandleCommand(command);
 
-        this.managerMock.Verify(m => m.ArmMappings(It.IsAny<MappingProfile>()), Times.Once());
+        this.managerMock.Verify(m => m.ArmMappings(It.IsAny<MappingProfile>(), true), Times.Once());
 
         MockConfigManager.RemoveMappingProfiles();
     }

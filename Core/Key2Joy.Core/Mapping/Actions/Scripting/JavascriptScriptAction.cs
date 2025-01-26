@@ -79,8 +79,8 @@ public class JavascriptAction : BaseScriptActionWithEnvironment<Engine>
         var functionName = exposedMethod.FunctionName;
         var parents = functionName.Split('.');
         var methodInfo = exposedMethod.GetExecutorMethodInfo();
-        var @delegate = new DelegateWrapper(this.Environment, methodInfo.CreateDelegate(exposedMethod));
-        var currentObject = this.Environment.Realm.GlobalObject;
+        var @delegate = JsValue.FromObject(this.Environment, methodInfo.CreateDelegate(exposedMethod));
+        var currentObject = this.Environment.Global;
 
         // TODO: This may work for the setTimeout and setInterval methods, but will it work for other
         // types of functions? I think this Func`3<JsValue, JsValue[], JsValue> may be the result of the

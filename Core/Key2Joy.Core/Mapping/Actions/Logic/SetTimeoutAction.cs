@@ -50,7 +50,7 @@ public class SetTimeoutAction : CoreAction
     ///         Print("One")
     ///
     ///         setTimeout(function () {
-    ///           App.Command("abort")
+    ///           App.Command("Abort")
     ///         }, 1000)
     ///       }, 1000)
     ///     }, 1000)
@@ -76,7 +76,7 @@ public class SetTimeoutAction : CoreAction
     ///             Print("One")
     ///
     ///             SetTimeout(function ()
-    ///                App.Command("abort")
+    ///                App.Command("Abort")
     ///             end, 1000)
     ///          end, 1000)
     ///       end, 1000)

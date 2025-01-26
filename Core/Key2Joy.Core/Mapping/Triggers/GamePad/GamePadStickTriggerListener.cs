@@ -23,6 +23,13 @@ public class GamePadStickTriggerListener : CoreTriggerListener
         }
     }
 
+    /// <summary>
+    /// Force a new instance to be created, used to reset the listener when mappings
+    /// are re-armed.
+    /// </summary>
+    /// <returns></returns>
+    public static GamePadStickTriggerListener NewInstance() => instance = new GamePadStickTriggerListener();
+
     private readonly Dictionary<GamePadSide, GamePadStickLookup> stickAxisLookups;
     private readonly IXInputService xInputService;
 

@@ -22,6 +22,7 @@ using Key2Joy.Mapping.Actions.Input;
 using Key2Joy.Mapping.Actions.Logic;
 using Key2Joy.Mapping.Triggers;
 using Key2Joy.Mapping.Triggers.Mouse;
+using Linearstar.Windows.RawInput;
 
 namespace Key2Joy.Gui;
 
@@ -685,6 +686,7 @@ public partial class MainForm : Form, IAcceptAppCommands, IHaveHandleAndInvoke
         {
             try
             {
+                RawInputDevice.RegisterDevice(HidUsageAndPage.Mouse, RawInputDeviceFlags.InputSink, this.Handle);
                 Key2JoyManager.Instance.ArmMappings(this.selectedProfile);
             }
             catch (MappingArmingFailedException ex)
@@ -701,10 +703,21 @@ public partial class MainForm : Form, IAcceptAppCommands, IHaveHandleAndInvoke
         }
         else
         {
+            RawInputDevice.UnregisterDevice(HidUsageAndPage.Mouse);
             Key2JoyManager.Instance.DisarmMappings();
         }
 
         this.deviceListControl.RefreshDevices();
+    }
+
+    protected override void WndProc(ref Message m)
+    {
+        // Note: I thought not calling the base WndProc might prevent messages from being
+        // passed along, which could be, but we can't reliably set the order of the
+        // listeners. So to override we'll use different means (like GlobalInputHook).
+        base.WndProc(ref m);
+
+        Key2JoyManager.Instance.CallWndProc(ref m);
     }
 
     private void TxtProfileName_TextChanged(object sender, EventArgs e)

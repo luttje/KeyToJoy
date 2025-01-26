@@ -61,7 +61,15 @@ public static class TypeConverter
         }
         else if (desiredType.IsEnum)
         {
-            value = Enum.Parse(desiredType, value.ToString());
+            try
+            {
+                value = Enum.Parse(desiredType, value.ToString());
+            }
+            catch (ArgumentException)
+            {
+                Output.WriteLine($"Could not parse value '{value}' to enum '{desiredType}'. Using first value instead.");
+                value = Enum.GetValues(desiredType).GetValue(0);
+            }
         }
         else if (desiredType == typeof(DateTime))
         {

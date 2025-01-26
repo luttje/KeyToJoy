@@ -165,74 +165,75 @@ public class GamePadStickAction : CoreAction, IProvideReverseAspect, IEquatable<
             gamePad.PlugIn();
         }
 
-        var state = gamePad.GetState();
+        gamePad.AccessState((state) =>
+        {
+            var deltaX = (short)0;
+            var deltaY = (short)0;
 
-        var deltaX = (short)0;
-        var deltaY = (short)0;
-
-        if (this.DeltaX is not null)
-        {
-            deltaX = Scale((short)this.DeltaX, EXACT_SCALE);
-        }
-        else if (inputBag is AxisDeltaInputBag axisInputBag)
-        {
-            deltaX = Scale(axisInputBag.DeltaX, this.InputScaleX);
-        }
-        else if (inputBag is GamePadTriggerInputBag triggerInputBag)
-        {
-            // TODO: This is now hard-coded, but I'd love for 'modifiers' to exist in between triggers and actions. Those could (with more fine tuning) be configured by the user.
-            deltaX = Scale((int)(triggerInputBag.LeftTriggerDelta * XInputGamePad.TriggerValueMax), this.InputScaleX);
-            if (deltaX > 0)
+            if (this.DeltaX is not null)
             {
-                // For triggers we need to not have a delta, but simply a value that maps directly to the stick value (feels better)
-                state.LeftStickX = 0;
-                state.RightStickX = 0;
+                deltaX = Scale((short)this.DeltaX, EXACT_SCALE);
             }
-        }
-
-        if (this.DeltaY is not null)
-        {
-            deltaY = Scale((int)this.DeltaY, EXACT_SCALE);
-        }
-        else if (inputBag is AxisDeltaInputBag axisInputBag)
-        {
-            deltaY = Scale(axisInputBag.DeltaY, this.InputScaleY);
-        }
-        else if (inputBag is GamePadTriggerInputBag triggerInputBag)
-        {
-            deltaY = Scale((int)(triggerInputBag.RightTriggerDelta * XInputGamePad.TriggerValueMax), this.InputScaleY);
-            if (deltaY > 0)
+            else if (inputBag is AxisDeltaInputBag axisInputBag)
             {
-                // For triggers we need to not have a delta, but simply a value that maps directly to the stick value (feels better)
-                state.LeftStickY = 0;
-                state.RightStickY = 0;
+                deltaX = Scale(axisInputBag.DeltaX, this.InputScaleX);
             }
-        }
+            else if (inputBag is GamePadTriggerInputBag triggerInputBag)
+            {
+                // TODO: This is now hard-coded, but I'd love for 'modifiers' to exist in between triggers and actions. Those could (with more fine tuning) be configured by the user.
+                deltaX = Scale((int)(triggerInputBag.LeftTriggerDelta * XInputGamePad.TriggerValueMax), this.InputScaleX);
+                if (deltaX > 0)
+                {
+                    // For triggers we need to not have a delta, but simply a value that maps directly to the stick value (feels better)
+                    state.LeftStickX = 0;
+                    state.RightStickX = 0;
+                }
+            }
 
-        if (this.Side == GamePadSide.Left)
-        {
-            state.LeftStickX = this.GetStickValue(state.LeftStickX, deltaX);
-            state.LeftStickY = this.GetStickValue(state.LeftStickY, deltaY);
-        }
-        else
-        {
-            state.RightStickX = this.GetStickValue(state.RightStickX, deltaX);
-            state.RightStickY = this.GetStickValue(state.RightStickY, deltaY);
-        }
+            if (this.DeltaY is not null)
+            {
+                deltaY = Scale((int)this.DeltaY, EXACT_SCALE);
+            }
+            else if (inputBag is AxisDeltaInputBag axisInputBag)
+            {
+                deltaY = Scale(axisInputBag.DeltaY, this.InputScaleY);
+            }
+            else if (inputBag is GamePadTriggerInputBag triggerInputBag)
+            {
+                deltaY = Scale((int)(triggerInputBag.RightTriggerDelta * XInputGamePad.TriggerValueMax), this.InputScaleY);
+                if (deltaY > 0)
+                {
+                    // For triggers we need to not have a delta, but simply a value that maps directly to the stick value (feels better)
+                    state.LeftStickY = 0;
+                    state.RightStickY = 0;
+                }
+            }
 
-        if (state.LeftStickX != 0
-            || state.LeftStickY != 0
-            || state.RightStickX != 0
-            || state.RightStickY != 0
-        )
-        {
-            // Reset the timer if there's input
-            this.noInputTimer.Interval = this.ResetAfterIdleTimeInMs;
-            this.noInputTimer.Stop();
-            this.noInputTimer.Start();
-        }
+            if (this.Side == GamePadSide.Left)
+            {
+                state.LeftStickX = this.GetStickValue(state.LeftStickX, deltaX);
+                state.LeftStickY = this.GetStickValue(state.LeftStickY, deltaY);
+            }
+            else
+            {
+                state.RightStickX = this.GetStickValue(state.RightStickX, deltaX);
+                state.RightStickY = this.GetStickValue(state.RightStickY, deltaY);
+            }
 
-        gamePad.Update();
+            if (state.LeftStickX != 0
+                || state.LeftStickY != 0
+                || state.RightStickX != 0
+                || state.RightStickY != 0
+            )
+            {
+                // Reset the timer if there's input
+                this.noInputTimer.Interval = this.ResetAfterIdleTimeInMs;
+                this.noInputTimer.Stop();
+                this.noInputTimer.Start();
+            }
+
+            return StateAccessorResult.Changed;
+        });
     }
 
     /// <summary>
@@ -243,20 +244,22 @@ public class GamePadStickAction : CoreAction, IProvideReverseAspect, IEquatable<
     private void NoInputTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
     {
         var gamePad = ServiceLocator.Current.GetInstance<ISimulatedGamePadService>().GetGamePad(this.GamePadIndex);
-        var state = gamePad.GetState();
 
-        if (this.Side == GamePadSide.Left)
+        gamePad.AccessState((state) =>
         {
-            state.LeftStickX = 0;
-            state.LeftStickY = 0;
-        }
-        else
-        {
-            state.RightStickX = 0;
-            state.RightStickY = 0;
-        }
+            if (this.Side == GamePadSide.Left)
+            {
+                state.LeftStickX = 0;
+                state.LeftStickY = 0;
+            }
+            else
+            {
+                state.RightStickX = 0;
+                state.RightStickY = 0;
+            }
 
-        gamePad.Update();
+            return StateAccessorResult.Changed;
+        });
     }
 
     private short GetStickValue(short stickValue, short delta)

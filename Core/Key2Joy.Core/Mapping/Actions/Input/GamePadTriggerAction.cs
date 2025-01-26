@@ -132,43 +132,45 @@ public class GamePadTriggerAction : CoreAction, IProvideReverseAspect, IEquatabl
             gamePad.PlugIn();
         }
 
-        var state = gamePad.GetState();
-        var deltaX = (byte)0;
-        var deltaY = (byte)0;
+        gamePad.AccessState((state) =>
+        {
+            var deltaX = (byte)0;
+            var deltaY = (byte)0;
 
-        if (this.Delta is not null)
-        {
-            deltaX = Scale((float)this.Delta, EXACT_SCALE);
-            deltaY = Scale((float)this.Delta, EXACT_SCALE);
-        }
-        else if (inputBag is AxisDeltaInputBag axisInputBag)
-        {
-            deltaX = Scale(axisInputBag.DeltaX, this.InputScale);
-            deltaY = Scale(axisInputBag.DeltaY, this.InputScale);
-        }
-        else if (inputBag is GamePadTriggerInputBag triggerInputBag)
-        {
-            // TODO: This is now hard-coded, but I'd love for 'modifiers' to exist in between triggers and actions. Those could (with more fine tuning) be configured by the user.
+            if (this.Delta is not null)
+            {
+                deltaX = Scale((float)this.Delta, EXACT_SCALE);
+                deltaY = Scale((float)this.Delta, EXACT_SCALE);
+            }
+            else if (inputBag is AxisDeltaInputBag axisInputBag)
+            {
+                deltaX = Scale(axisInputBag.DeltaX, this.InputScale);
+                deltaY = Scale(axisInputBag.DeltaY, this.InputScale);
+            }
+            else if (inputBag is GamePadTriggerInputBag triggerInputBag)
+            {
+                // TODO: This is now hard-coded, but I'd love for 'modifiers' to exist in between triggers and actions. Those could (with more fine tuning) be configured by the user.
+                if (this.Side == GamePadSide.Left)
+                {
+                    deltaX = Scale(triggerInputBag.LeftTriggerDelta, this.InputScale);
+                }
+                else
+                {
+                    deltaX = Scale(triggerInputBag.RightTriggerDelta, this.InputScale);
+                }
+            }
+
             if (this.Side == GamePadSide.Left)
             {
-                deltaX = Scale(triggerInputBag.LeftTriggerDelta, this.InputScale);
+                state.LeftTrigger = Math.Max(deltaX, deltaY);
             }
             else
             {
-                deltaX = Scale(triggerInputBag.RightTriggerDelta, this.InputScale);
+                state.RightTrigger = Math.Max(deltaX, deltaY);
             }
-        }
 
-        if (this.Side == GamePadSide.Left)
-        {
-            state.LeftTrigger = Math.Max(deltaX, deltaY);
-        }
-        else
-        {
-            state.RightTrigger = Math.Max(deltaX, deltaY);
-        }
-
-        gamePad.Update();
+            return StateAccessorResult.Changed;
+        });
     }
 
     /// <inheritdoc/>

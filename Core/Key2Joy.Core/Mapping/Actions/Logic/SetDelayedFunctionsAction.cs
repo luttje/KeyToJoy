@@ -52,7 +52,7 @@ public class SetDelayedFunctionsAction : CoreAction
     ///       Print("One")
     ///    end,
     ///    function ()
-    ///       App.Command("abort")
+    ///       App.Command("Abort")
     ///    end
     /// )
     /// ]]>

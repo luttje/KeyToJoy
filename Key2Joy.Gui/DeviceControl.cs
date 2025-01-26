@@ -51,9 +51,16 @@ public partial class DeviceControl : UserControl
 
         this.Invoke((MethodInvoker)delegate
         {
-            this.fadeTimer.Stop();
-            this.fadeTimer.Start();
-            this.Invalidate();
+            try
+            {
+                this.fadeTimer.Stop();
+                this.fadeTimer.Start();
+                this.Invalidate();
+            }
+            catch (System.ComponentModel.Win32Exception)
+            {
+                // Ignore (happens if we spam the chkArmed in MainForm)
+            }
         });
     }
 

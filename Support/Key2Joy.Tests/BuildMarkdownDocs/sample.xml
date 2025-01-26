@@ -3078,7 +3078,7 @@
                    Print("One")
                 end,
                 function ()
-                   App.Command("abort")
+                   App.Command("Abort")
                 end
              )
              ]]>
@@ -3113,7 +3113,7 @@
                      Print("One")
 
                      setTimeout(function () {
-                       App.Command("abort")
+                       App.Command("Abort")
                      }, 1000)
                    }, 1000)
                  }, 1000)
@@ -3153,7 +3153,7 @@
                      Print("One")
 
                      setTimeout(function () {
-                       App.Command("abort")
+                       App.Command("Abort")
                      }, 1000)
                    }, 1000)
                  }, 1000)
@@ -3179,7 +3179,7 @@
                          Print("One")
 
                          SetTimeout(function ()
-                            App.Command("abort")
+                            App.Command("Abort")
                          end, 1000)
                       end, 1000)
                    end, 1000)

@@ -65,18 +65,15 @@ public class GamePadResetAction : CoreAction
             gamePad.PlugIn();
         }
 
-        var state = gamePad.GetState();
-        state.Reset();
-        gamePad.Update();
+        gamePad.ResetState();
     }
 
     public override async Task Execute(AbstractInputBag inputBag = null)
     {
         var gamePadService = ServiceLocator.Current.GetInstance<ISimulatedGamePadService>();
         var gamePad = gamePadService.GetGamePad(this.GamePadIndex);
-        var state = gamePad.GetState();
-        state.Reset();
-        gamePad.Update();
+
+        gamePad.ResetState();
     }
 
     public override string GetNameDisplay() => this.Name.Replace("{0}", this.GamePadIndex.ToString());

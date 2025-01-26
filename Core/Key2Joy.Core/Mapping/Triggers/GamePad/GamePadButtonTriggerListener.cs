@@ -3,6 +3,7 @@ using CommonServiceLocator;
 using Key2Joy.Contracts.Mapping;
 using Key2Joy.Contracts.Mapping.Triggers;
 using Key2Joy.LowLevelInput.XInput;
+using Key2Joy.Mapping.Triggers.Mouse;
 
 namespace Key2Joy.Mapping.Triggers.GamePad;
 
@@ -19,6 +20,13 @@ public class GamePadButtonTriggerListener : PressReleaseTriggerListener<GamePadB
             return instance;
         }
     }
+
+    /// <summary>
+    /// Force a new instance to be created, used to reset the listener when mappings
+    /// are re-armed.
+    /// </summary>
+    /// <returns></returns>
+    public static GamePadButtonTriggerListener NewInstance() => instance = new GamePadButtonTriggerListener();
 
     private readonly IXInputService xInputService;
     private readonly Dictionary<GamePadButton, bool> currentKeysDown = new();

@@ -88,8 +88,6 @@ public class Key2JoyManagerTests
             //// Override the handler/invoker:
             // Mock<IHaveHandleAndInvoke> invoker = new();
             // Key2JoyManager.Instance.SetHandlerWithInvoke(invoker.Object);
-            // Disable the default script triggers so they dont interfere
-            Key2JoyManager.Instance.ExplicitTriggerListeners = new List<AbstractTriggerListener>();
 
             callback(listener, trigger, action);
         }, configManager);
@@ -122,7 +120,7 @@ public class Key2JoyManagerTests
             };
             profile.MappedOptions.Add(mappedOption);
 
-            Key2JoyManager.Instance.ArmMappings(profile);
+            Key2JoyManager.Instance.ArmMappings(profile, false);
 
             // Assert that the listener hadd the mapped option added
             listener.Verify(l => l.AddMappedOption(mappedOption), Times.Once);
@@ -177,7 +175,7 @@ public class Key2JoyManagerTests
             };
             profile.MappedOptions.Add(mappedOption);
 
-            Key2JoyManager.Instance.ArmMappings(profile);
+            Key2JoyManager.Instance.ArmMappings(profile, false);
 
             listenerObject.DoExecuteTriggerForTest(
                 new List<AbstractMappedOption>() { mappedOption },

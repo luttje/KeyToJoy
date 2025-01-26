@@ -1,10 +1,23 @@
 using System;
 using System.Collections.Generic;
+using System.Windows.Forms;
 
 namespace Key2Joy.Contracts.Mapping.Triggers;
 
 public abstract class AbstractTriggerListener : MarshalByRefObject
 {
+    /// <summary>
+    /// Set this to true if you want the listener to get WndProc messages.
+    /// Sent from the main form.
+    /// </summary>
+    public virtual bool HasWndProcHandle { get; } = false;
+
+    /// <summary>
+    /// WndProc handler for the listener. Only called if <see cref="HasWndProcHandle"/>
+    /// </summary>
+    /// <param name="m"></param>
+    public virtual void WndProc(ref Message m) { }
+
     /// <summary>
     /// Called when a trigger is about to activate. Listeners can modify which
     /// mapped option candidates will be executed.

@@ -20,6 +20,13 @@ public class GamePadTriggerTriggerListener : CoreTriggerListener
         }
     }
 
+    /// <summary>
+    /// Force a new instance to be created, used to reset the listener when mappings
+    /// are re-armed.
+    /// </summary>
+    /// <returns></returns>
+    public static GamePadTriggerTriggerListener NewInstance() => instance = new GamePadTriggerTriggerListener();
+
     private readonly Dictionary<GamePadSide, List<AbstractMappedOption>> triggerLookup;
     private readonly IXInputService xInputService;
 

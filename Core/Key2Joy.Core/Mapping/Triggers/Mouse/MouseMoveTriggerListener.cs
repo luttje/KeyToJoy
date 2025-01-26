@@ -1,15 +1,20 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Windows.Forms;
 using CommonServiceLocator;
 using Key2Joy.Config;
 using Key2Joy.Contracts.Mapping;
 using Key2Joy.Contracts.Mapping.Triggers;
 using Key2Joy.LowLevelInput;
+using Linearstar.Windows.RawInput;
 
 namespace Key2Joy.Mapping.Triggers.Mouse;
 
 public class MouseMoveTriggerListener : CoreTriggerListener, IOverrideDefaultBehavior
 {
+    public override bool HasWndProcHandle => true;
+
     public static MouseMoveTriggerListener instance;
 
     public static MouseMoveTriggerListener Instance
@@ -22,7 +27,15 @@ public class MouseMoveTriggerListener : CoreTriggerListener, IOverrideDefaultBeh
         }
     }
 
+    /// <summary>
+    /// Force a new instance to be created, used to reset the listener when mappings
+    /// are re-armed.
+    /// </summary>
+    /// <returns></returns>
+    public static MouseMoveTriggerListener NewInstance() => instance = new MouseMoveTriggerListener();
+
     private static readonly TimeSpan IS_MOVING_TOLERANCE = TimeSpan.FromMilliseconds(10);
+    private const int WM_INPUT = 0x00FF;
 
     private readonly Dictionary<int, List<AbstractMappedOption>> lookupAxis;
 
@@ -57,7 +70,7 @@ public class MouseMoveTriggerListener : CoreTriggerListener, IOverrideDefaultBeh
     {
         // This captures global mouse input and blocks default behaviour by setting e.Handled
         this.globalMouseButtonHook = new GlobalInputHook();
-        this.globalMouseButtonHook.MouseInputEvent += this.OnMouseInputEvent;
+        this.globalMouseButtonHook.MouseInputEvent += this.OnMouseInputEventOverride;
         this.lastAllowedX = null;
         this.lastAllowedY = null;
 
@@ -68,7 +81,7 @@ public class MouseMoveTriggerListener : CoreTriggerListener, IOverrideDefaultBeh
     protected override void Stop()
     {
         instance = null;
-        this.globalMouseButtonHook.MouseInputEvent -= this.OnMouseInputEvent;
+        this.globalMouseButtonHook.MouseInputEvent -= this.OnMouseInputEventOverride;
         this.globalMouseButtonHook.Dispose();
         this.globalMouseButtonHook = null;
 
@@ -84,7 +97,7 @@ public class MouseMoveTriggerListener : CoreTriggerListener, IOverrideDefaultBeh
     {
         this.lastAllowedX = null;
         this.lastAllowedY = null;
-        System.Diagnostics.Debug.WriteLine($"Mouse move reset center");
+        Debug.WriteLine($"Mouse move reset center");
     }
 
     /// <inheritdoc/>
@@ -110,6 +123,23 @@ public class MouseMoveTriggerListener : CoreTriggerListener, IOverrideDefaultBeh
 
         return DateTime.Now - this.lastMoveTime < IS_MOVING_TOLERANCE
             && this.lastDirectionHashes.Contains(mouseMoveTrigger.GetInputHash());
+    }
+
+    private void OnMouseInputEventOverride(object sender, GlobalMouseHookEventArgs e)
+    {
+        if (!this.IsActive)
+        {
+            return;
+        }
+
+        /// Mouse buttons are handled through <see cref="MouseButtonTriggerListener"/>
+        if (e.MouseState != MouseState.Move)
+        {
+            return;
+        }
+
+        // TODO: Let DoExecuteTrigger decide to override (see below)
+        e.Handled = true;
     }
 
     private void OnMouseInputEvent(object sender, GlobalMouseHookEventArgs e)
@@ -184,7 +214,7 @@ public class MouseMoveTriggerListener : CoreTriggerListener, IOverrideDefaultBeh
         this.lastDirectionHashes = directionHashes;
         this.lastMoveTime = DateTime.Now;
 
-        if (!shouldOverride || (!this.lastAllowedX.HasValue && !this.lastAllowedY.HasValue))
+        //if (!shouldOverride || (!this.lastAllowedX.HasValue && !this.lastAllowedY.HasValue))
         {
             this.lastAllowedX = e.RawData.Position.X;
             this.lastAllowedY = e.RawData.Position.Y;
@@ -194,5 +224,60 @@ public class MouseMoveTriggerListener : CoreTriggerListener, IOverrideDefaultBeh
         {
             e.Handled = true;
         }
+    }
+
+    /// <inheritdoc/>
+    public override void WndProc(ref Message m)
+    {
+        base.WndProc(ref m);
+
+        if (!this.IsActive)
+        {
+            return;
+        }
+
+        if (m.Msg != WM_INPUT)
+        {
+            return;
+        }
+
+        var data = RawInputData.FromHandle(m.LParam);
+
+        if (data is not RawInputMouseData mouse)
+        {
+            return;
+        }
+
+        // RawMouseFlags.None (0x00) == MOUSE_MOVE_RELATIVE (0x00)
+        // Source: https://learn.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-rawmouse
+        if (mouse.Mouse.Flags != Linearstar.Windows.RawInput.Native.RawMouseFlags.None)
+        {
+            return;
+        }
+
+        Debug.WriteLine($"Mouse X, Y: {mouse.Mouse.LastX}, {mouse.Mouse.LastY}");
+
+        // EXPERIMENT:  In order to try fix janky input, lets go back to using WndProc for mouse move
+        //              This event being built like this is only temporary.
+        //              Note that I set the ListenerOverrideDefaultMouseMoveAll config to true in settings.
+        // TODO: We should change the OnMouseInputEvent signature to work better for our new approach.
+        var mouseData = new LowLevelMouseInputEvent()
+        {
+            AdditionalInformation = (IntPtr)mouse.Mouse.ExtraInformation,
+            Flags = MOUSEEVENTF.MOVE,
+            MouseData = (int) mouse.Mouse.Buttons,
+
+            // Because we're checking the relative move (0x00) flag LastX and LastY are deltas
+            Position = new Point
+            {
+                X = mouse.Mouse.LastX,
+                // Delta is inverted for Y
+                Y = mouse.Mouse.LastY * -1,
+            },
+            TimeStamp = 0,
+        };
+
+        GlobalMouseHookEventArgs eventArguments = new(mouseData, MouseState.Move);
+        this.OnMouseInputEvent(this, eventArguments);
     }
 }

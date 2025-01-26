@@ -1,6 +1,23 @@
+using System;
 using SimWinInput;
 
 namespace Key2Joy.LowLevelInput.SimulatedGamePad;
+
+/// <summary>
+/// Result for the <see cref="ISimulatedGamePad.AccessState"/> method.
+/// </summary>
+public enum StateAccessorResult
+{
+    /// <summary>
+    /// The accessor didn't change the state, and we don't have to do anything.
+    /// </summary>
+    Unchanged = 0,
+
+    /// <summary>
+    /// The state was changed by the accessor, the state needs to be updated.
+    /// </summary>
+    Changed = 1,
+}
 
 /// <summary>
 /// Represents a simulated gamepad device.
@@ -48,20 +65,18 @@ public interface ISimulatedGamePad
     void ReleaseControl(GamePadControl control);
 
     /// <summary>
-    /// Get the raw input state from the GamePad
+    /// Access the raw input state from the GamePad with this callback.
+    /// If the callback returns true the state will be updated to whatever
+    /// it was mutated to.
+    /// Mutation should be locked to one thread at a time.
     /// </summary>
-    /// <returns>The raw input state of the gamepad.</returns>
-    SimulatedGamePadState GetState();
+    /// <param name="stateAccessor"></param>
+    void AccessState(Func<SimulatedGamePadState, StateAccessorResult> stateAccessor);
 
     /// <summary>
     /// Resets the GamePad state to the natural at-rest stat
     /// </summary>
     void ResetState();
-
-    /// <summary>
-    /// Update any changes made to the state to be reflected in the gamepad
-    /// </summary>
-    void Update();
 
     /// <summary>
     /// Returns the gamepad info on this device

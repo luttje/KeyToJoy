@@ -3,6 +3,7 @@ using CommonServiceLocator;
 using Key2Joy.Config;
 using Key2Joy.Contracts.Mapping.Triggers;
 using Key2Joy.LowLevelInput;
+using Key2Joy.Mapping.Triggers.Keyboard;
 
 namespace Key2Joy.Mapping.Triggers.Mouse;
 
@@ -19,6 +20,13 @@ public class MouseButtonTriggerListener : PressReleaseTriggerListener<MouseButto
             return instance;
         }
     }
+
+    /// <summary>
+    /// Force a new instance to be created, used to reset the listener when mappings
+    /// are re-armed.
+    /// </summary>
+    /// <returns></returns>
+    public static MouseButtonTriggerListener NewInstance() => instance = new MouseButtonTriggerListener();
 
     private GlobalInputHook globalMouseButtonHook;
     private readonly Dictionary<LowLevelInput.Mouse.Buttons, bool> currentButtonsDown = new();

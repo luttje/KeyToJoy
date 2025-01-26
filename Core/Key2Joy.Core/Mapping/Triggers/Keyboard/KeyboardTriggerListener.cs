@@ -22,6 +22,13 @@ public class KeyboardTriggerListener : PressReleaseTriggerListener<KeyboardTrigg
         }
     }
 
+    /// <summary>
+    /// Force a new instance to be created, used to reset the listener when mappings
+    /// are re-armed.
+    /// </summary>
+    /// <returns></returns>
+    public static KeyboardTriggerListener NewInstance() => instance = new KeyboardTriggerListener();
+
     private GlobalInputHook globalKeyboardHook;
     private readonly VirtualKeyConverter virtualKeyConverter = new();
     private readonly Dictionary<Keys, bool> currentKeysPressed = new();

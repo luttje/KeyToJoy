@@ -1,3 +1,4 @@
+using System;
 using SimWinInput;
 
 namespace Key2Joy.LowLevelInput.SimulatedGamePad;
@@ -14,6 +15,8 @@ public class SimulatedGamePad : ISimulatedGamePad
 
     private bool isPluggedIn = false;
     private readonly IGamePadInfo gamePadInfo;
+
+    private object stateLock = new();
 
     public SimulatedGamePad(int index)
     {
@@ -32,7 +35,6 @@ public class SimulatedGamePad : ISimulatedGamePad
 
         // Ensure the state starts reset fixes problem where other (real) gamepad may get button stuck
         this.ResetState();
-        this.Update();
     }
 
     /// <inheritdoc />
@@ -68,20 +70,31 @@ public class SimulatedGamePad : ISimulatedGamePad
     }
 
     /// <inheritdoc />
-    public SimulatedGamePadState GetState()
-        => SimGamePad.Instance.State[this.Index];
+    public void AccessState(Func<SimulatedGamePadState, StateAccessorResult> stateAccessor)
+    {
+        // Commented, because as expected this freezes the app up when
+        // everyone has to wait for the lock to be released. And it didn't
+        // fix #61 like I hoped it would.
+        //lock (this.stateLock)
+        {
+            var state = SimGamePad.Instance.State[this.Index];
+
+            if (stateAccessor(state) == StateAccessorResult.Unchanged)
+            {
+                return;
+            }
+
+            SimGamePad.Instance.Update(this.Index);
+            this.gamePadInfo.OnActivityOccurred();
+        }
+    }
 
     /// <inheritdoc />
     public void ResetState()
-    {
-        SimGamePad.Instance.State[this.Index].Reset();
-        this.gamePadInfo.OnActivityOccurred();
-    }
+        => this.AccessState((state) =>
+        {
+            state.Reset();
 
-    /// <inheritdoc />
-    public void Update()
-    {
-        SimGamePad.Instance.Update(this.Index);
-        this.gamePadInfo.OnActivityOccurred();
-    }
+            return StateAccessorResult.Changed;
+        });
 }
